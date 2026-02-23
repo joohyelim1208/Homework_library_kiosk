@@ -1,17 +1,16 @@
-main.dart
 import 'dart:io';
+
+import 'package:dart_library_kiosk/services/police_service.dart';
 
 import 'enums/enums.dart';
 import 'models/book.dart';
 import 'repository/book_repository.dart';
 import 'services/borrow_service.dart';
-import 'services/policy_service.dart';
+
 import 'utils/console_io.dart';
 
 void main() {
-  final BookRepository bookRepository = BookRepository(
-    seedBooks: _seedBooks(),
-  );
+  final BookRepository bookRepository = BookRepository(seedBooks: _seedBooks());
 
   final BorrowService borrowService = BorrowService();
   final PolicyService policyService = PolicyService();
@@ -113,20 +112,24 @@ class LibraryApp {
 
     // TODO(1): 품절 도서는 담을 수 없게 막기
     // 힌트: selectedBook.status == BookStatus.outOfStock
-
-    final int maxBorrowLimit = policyService.borrowLimitForTier(selectedMemberTier);
+    if (selectedBook.status == BookStatus.outOfStock) {
+      print('선택하신 ${selectedBook.title}은 현재 품절입니다.');
+    }
+    // 투두15 등급별 대여가능 권수 반환
+    final int maxBorrowLimit = policyService.borrowLimitForTier(
+      selectedMemberTier,
+    );
 
     // TODO(2): borrowService.add(...) 호출
-    // - 재고 초과 방지
+    // - 재고 초과 방지: borrowService에서 함수작성
     // - 등급별 대여 가능 권수(maxBorrowLimit) 초과 방지
     // - 이미 담긴 도서면 누적
-    //
-    // 예:
-    // borrowService.add(
-    //   book: selectedBook,
-    //   count: count,
-    //   maxBorrowLimit: maxBorrowLimit,
-    // );
+
+    borrowService.add(
+      book: selectedBook,
+      count: count,
+      maxBorrowLimit: maxBorrowLimit,
+    );
   }
 
   void _manageBorrowListFlow() {
@@ -152,20 +155,22 @@ class LibraryApp {
       return;
     }
 
-    final int maxBorrowLimit = policyService.borrowLimitForTier(selectedMemberTier);
+    final int maxBorrowLimit = policyService.borrowLimitForTier(
+      // enum MemberTier 값. 등급별 대여가능 권수 반환
+      selectedMemberTier,
+    );
 
     // TODO(3): borrowService.updateCount(...) 호출
     // - 인덱스 범위 체크
     // - 0이면 삭제
     // - 재고 초과 방지
     // - 등급별 대여 가능 권수(maxBorrowLimit) 초과 방지
-    //
-    // 예:
-    // borrowService.updateCount(
-    //   borrowItemIndex: borrowItemIndex,
-    //   newCount: newCount,
-    //   maxBorrowLimit: maxBorrowLimit,
-    // );
+
+    borrowService.updateCount(
+      borrowItemIndex: borrowItemIndex,
+      newCount: newCount,
+      maxBorrowLimit: maxBorrowLimit,
+    );
   }
 
   void _selectMemberTierFlow() {
@@ -194,7 +199,14 @@ class LibraryApp {
     print('회원 등급이 ${_memberTierText(selectedMemberTier)}로 설정되었습니다.');
 
     // TODO(4) (선택): 등급이 내려갔을 때 이미 담긴 총 권수가 제한을 넘으면 안내하기
-    // 힌트: borrowService.totalBorrowedCount() 와 policyService.borrowLimitForTier(...) 비교
+    // 힌트: borrowService.totalBorrowedCount() 와 policyService.borrowLimitForTier(...) 비교. 총 대여권수와 등급별 할인율
+    final int currentTotalCount = borrowService
+        .totalBorrowedCount(); // 현재 빌린 장바구니 총 권수
+    final int finalTier = policyService.borrowLimitForTier(selectedMemberTier);
+
+    if (currentTotalCount > finalTier) {
+      print('장바구니에 담긴 총 도서 수: $currentTotalCount가 대여제한 권수 $finalTier을 초과했습니다.');
+    }
   }
 
   void _confirmBorrowFlow() {
@@ -223,11 +235,15 @@ class LibraryApp {
     }
 
     // TODO(5): 확정 시 재고 차감
-    // - borrowService.getAll() 순회
-    // - 각 item.book.decreaseStock(item.count) 호출
+    // - borrowService.getAll() 순회. 장바구니에 담긴 모든 아이템을 가져옴.
+    // - 각 item.book.decreaseStock(item.count) 호출. 장바구니 속 아이템을 하나씩 가져와서 호출
     // - decreaseStock 내부에서 status 갱신되도록 구현
-
+    final items = borrowService.getAll();
+    for (var item in items) {
+      item.book.decreaseStock(item.count);
+    }
     // TODO(6): borrowService.clear()
+    borrowService.clear();
 
     print('대여가 완료되었습니다. 반납 기한을 지켜주세요!');
   }
