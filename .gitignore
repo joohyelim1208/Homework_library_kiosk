@@ -1,0 +1,21 @@
+# https://dart.dev/guides/libraries/private-files
+# Created by `dart pub`
+.dart_tool/
+
+# 배포 및 빌드 결과물
+build/
+
+# 외부 라이브러리 (pub get으로 언제든 다시 받을 수 있음)
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+
+# IDE 관련 설정 (개인 설정이므로 팀원과 공유할 필요 없음)
+.idea/
+.vscode/
+*.iml
+
+# OS 관련 파일
+.DS_Store
+Thumbs.db
