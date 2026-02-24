@@ -1,5 +1,4 @@
 import 'dart:math';
-
 import '../enums/enums.dart';
 
 class PolicyService {
@@ -28,7 +27,7 @@ class PolicyService {
       case MemberTier.standard:
         return 0.05;
       case MemberTier.premium:
-        return 1.0;
+        return 0.10;
     }
   }
 

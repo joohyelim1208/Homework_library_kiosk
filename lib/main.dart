@@ -195,14 +195,16 @@ class LibraryApp {
         print('잘못된 입력입니다.');
         return;
     }
-
+    // 변경 등급 적용!!
     print('회원 등급이 ${_memberTierText(selectedMemberTier)}로 설정되었습니다.');
 
     // TODO(4) (선택): 등급이 내려갔을 때 이미 담긴 총 권수가 제한을 넘으면 안내하기
     // 힌트: borrowService.totalBorrowedCount() 와 policyService.borrowLimitForTier(...) 비교. 총 대여권수와 등급별 할인율
     final int currentTotalCount = borrowService
         .totalBorrowedCount(); // 현재 빌린 장바구니 총 권수
-    final int finalTier = policyService.borrowLimitForTier(selectedMemberTier);
+    final int finalTier = policyService.borrowLimitForTier(
+      selectedMemberTier,
+    ); // 새등급 한도
 
     if (currentTotalCount > finalTier) {
       print('장바구니에 담긴 총 도서 수: $currentTotalCount가 대여제한 권수 $finalTier을 초과했습니다.');
@@ -212,6 +214,14 @@ class LibraryApp {
   void _confirmBorrowFlow() {
     if (borrowService.isEmpty) {
       print('확정할 대여 항목이 없습니다.');
+      return;
+    }
+
+    // 등급 관련해서 대여에 대한 한도를 한번 더 체크한다.
+    final int masLine = policyService.borrowLimitForTier(selectedMemberTier);
+    if (borrowService.totalBorrowedCount() > masLine) {
+      print('대여불가: 선택하신 등급의 대여한도 ${masLine}권을 초과했습니다.');
+      print('장바구니에서 수량을 줄여주세요.');
       return;
     }
 
